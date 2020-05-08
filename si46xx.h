@@ -23,6 +23,7 @@
 
 #define msleep(x) usleep(x*1000)
 
+//Init and common
 #define SI46XX_RD_REPLY 0x00
 #define SI46XX_POWER_UP 0x01
 #define SI46XX_HOST_LOAD 0x04
@@ -33,6 +34,8 @@
 #define SI46XX_GET_SYS_STATE 0x09
 #define SI46XX_SET_PROPERTY 0x13
 #define SI46XX_GET_PROPERTY 0x14
+
+//FM functions
 #define SI46XX_FM_TUNE_FREQ 0x30
 #define SI46XX_FM_SEEK_START 0x31
 #define SI46XX_FM_RSQ_STATUS 0x32
@@ -40,6 +43,7 @@
 #define SI46XX_FM_RDS_STATUS 0x34
 #define SI46XX_FM_RDS_BLOCKCOUNT 0x35
 
+//DAB functions
 #define SI46XX_DAB_INT_CTL_ENABLE 0x0000
 #define SI46XX_DAB_INT_CTL_REPEAT 0x0001
 #define SI46XX_DAB_TUNE_FREQ 0xB0
@@ -57,6 +61,7 @@
 #define SI46XX_DAB_GET_TIME 0xBC
 #define SI46XX_DAB_GET_SUBCHAN_INFO 0xBE
 
+//FM setup
 #define SI46XX_FM_INT_CTL_ENABLE 0x0000
 #define SI46XX_FM_INT_CTL_REPEAT 0x0001
 #define SI46XX_FM_VALID_MAX_TUNE_ERROR 0x3200
@@ -70,12 +75,12 @@
 #define SI46XX_FM_RDS_CONFIG 0x3C02
 #define SI46XX_FM_AUDIO_DE_EMPHASIS 0x3900
 
+
 #define SI46XX_DAB_TUNE_FE_CFG 0x1712
 #define SI46XX_DAB_TUNE_FE_VARM 0x1710
 #define SI46XX_DAB_TUNE_FE_VARB 0x1711
 #define SI46XX_DAB_CRTL_XPAD_ENABLE 0xB400
 #define SI46XX_DAB_DRC_OPTION 0xB401
-
 #define SI46XX_DAB_CTRL_DAB_MUTE_SIGNAL_LEVEL_THRESHOLD 0xB501
 #define SI46XX_DAB_CTRL_DAB_MUTE_SIGLOW_THRESHOLD 0xB505
 #define SI46XX_DAB_CTRL_DAB_ACF_ENABLE 0xB500
@@ -185,8 +190,13 @@ struct dab_service_list_t{
 	struct dab_service_t services[MAX_SERVICES];
 }dab_service_list;
 
+void spi_init(void);
+int spi(uint8_t *data, int len);
+
 void si46xx_reset(void);
+int si46xx_reply(const char *log);
 void si46xx_shutdown(void);
+void si46xx_hostload(const char *file);
 void si46xx_init_dab(void);
 void si46xx_init_fm(void);
 void si46xx_get_sys_state(void);

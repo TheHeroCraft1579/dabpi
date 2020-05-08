@@ -94,7 +94,7 @@ int si46xx_reply(const char *log) {
 	while (timeout--) {
 		data[0] = 0;
 		spi(data, 8);
-		if (data[1] & 0x80) { // CTS ?
+		if (data[1] >= 0x80) { // CTS
 			hexDump(log, data, 8);
 			return 1;
 		}
@@ -112,7 +112,7 @@ int si46xx_reply_len(const char *log, uint16_t len) {
 	while (timeout--) {
 		data[0] = 0;
 		spi(data, len);
-		if (data[1] & 0x80) { // CTS ?
+		if (data[1] >= 0x80) { // CTS
 			hexDump(log, data, len);
 			return 1;
 		}

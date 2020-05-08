@@ -28,9 +28,10 @@ uint8_t dab_num_channels;
 void si46xx_init_dab(void) {
 	si46xx_reset();
 	si46xx_powerup();
+    si46xx_hostload("firmware/rom00_patch_mini.bin");
 	si46xx_hostload("firmware/rom00_patch.016.bin");
-	// si46xx_hostload("firmware/dab_radio_3_2_7.bif");
-	si46xx_hostload("firmware/dab_radio_5_0_5.bin");
+    si46xx_hostload("firmware/dab_radio_5_0_9.bin");
+
 	si46xx_boot();
 
 	si46xx_get_sys_state();
@@ -40,11 +41,16 @@ void si46xx_init_dab(void) {
 //	si46xx_set_property(SI46XX_DAB_CTRL_DAB_MUTE_SIGLOW_THRESHOLD, 0);
 //	si46xx_set_property(SI46XX_DAB_CTRL_DAB_MUTE_ENABLE, 0);
 //	si46xx_set_property(SI46XX_DAB_CTRL_DAB_ACF_ENABLE, 0x0000);
-//	si46xx_set_property(SI46XX_DIGITAL_SERVICE_INT_SOURCE, 1); // enable DSRVPAKTINT interrupt ??
+	si46xx_set_property(SI46XX_DIGITAL_SERVICE_INT_SOURCE, 0x0003); // enable DSRVPAKTINT interrupt ??
 	si46xx_set_property(SI46XX_DAB_TUNE_FE_CFG, 0x0001); // front end switch closed
 	si46xx_set_property(SI46XX_DAB_TUNE_FE_VARM, 0x1710); // Front End Varactor configuration (Changed from '10' to 0x1710 to improve receiver sensitivity - Bjoern 27.11.14)
 	si46xx_set_property(SI46XX_DAB_TUNE_FE_VARB, 0x1711); // Front End Varactor configuration (Changed from '10' to 0x1711 to improve receiver sensitivity - Bjoern 27.11.14)
-	si46xx_set_property(SI46XX_PIN_CONFIG_ENABLE, 0x0002); // enable I2S output (BUG!!! either DAC or I2S seems to work)
+	si46xx_set_property(SI46XX_PIN_CONFIG_ENABLE, 0x8002); // enable I2S output (BUG!!! either DAC or I2S seems to work)
+    si46xx_set_property(SI46XX_DAB_INT_CTL_ENABLE, 0x0050); // Enable DSRVINT
+    si46xx_set_property(SI46XX_DAB_CRTL_XPAD_ENABLE, 0xBFDD); //Enable all data types
+    si46xx_set_property(SI46XX_DAB_DRC_OPTION, 0x0002); //Enable 1/2 DRC gain
+    //si46xx_set_property(SI46XX_DAB_ANNOUNCEMENT_ENABLE, 0x07FF); //Enable announcements
+
 }
 
 void si46xx_dab_digrad_status_print(struct dab_digrad_status_t *status) {
@@ -181,7 +187,7 @@ void si46xx_dab_tune_freq(uint8_t index, uint8_t antcap) {
 	while (timeout--) {
 		data[0] = 0;
 		spi(data, 5);
-		if ((data[1] & 0x80) && (data[1] & 0x01)) { // CTS + tuned ?
+		if ((data[1] & 0x81)){ //&& (data[1] & 0x01//)) //{ // CTS + tuned ?
 			hexDump("DAB_TUNE_FREQ", data, 5);
 			return;
 		}
@@ -234,12 +240,60 @@ void si46xx_dab_start_digital_service_num(uint32_t num) {
 	si46xx_reply("DAB_START_DIGITAL_SERVICE");
 }
 
+void si46xx_dab_start_digital_service_data(uint32_t num) {
+	uint8_t data[12];
+	uint32_t service_id = dab_service_list.services[num].service_id;
+	uint16_t component_id = dab_service_list.services[num].component_id[0];
+	char *service_label = dab_service_list.services[num].service_label;
+
+	data[0] = SI46XX_DAB_START_DIGITAL_SERVICE;
+	data[1] = 0x0001;
+	data[2] = 0;
+	data[3] = 0;
+	data[4] = service_id & 0xFF;
+	data[5] = (service_id >> 8) & 0xFF;
+	data[6] = (service_id >> 16) & 0xFF;
+	data[7] = (service_id >> 24) & 0xFF;
+	data[8] = component_id & 0xFF;
+	data[9] = (component_id >> 8) & 0xFF;
+	data[10] = (component_id >> 16) & 0xFF;
+	data[11] = (component_id >> 24) & 0xFF;
+
+	printf("Starting service %s %x %x\r\n", service_label, service_id, component_id);
+	spi(data, 12);
+	si46xx_reply("DAB_START_DIGITAL_SERVICE_DATA");
+}
+void si46xx_dab_stop_digital_service_data(uint32_t num) {
+	uint8_t data[12];
+	uint32_t service_id = dab_service_list.services[num].service_id;
+	uint16_t component_id = dab_service_list.services[num].component_id[0];
+	char *service_label = dab_service_list.services[num].service_label;
+
+	data[0] = SI46XX_DAB_STOP_DIGITAL_SERVICE;
+	data[1] = 0x0001;
+	data[2] = 0;
+	data[3] = 0;
+	data[4] = service_id & 0xFF;
+	data[5] = (service_id >> 8) & 0xFF;
+	data[6] = (service_id >> 16) & 0xFF;
+	data[7] = (service_id >> 24) & 0xFF;
+	data[8] = component_id & 0xFF;
+	data[9] = (component_id >> 8) & 0xFF;
+	data[10] = (component_id >> 16) & 0xFF;
+	data[11] = (component_id >> 24) & 0xFF;
+
+	printf("Starting service %s %x %x\r\n", service_label, service_id, component_id);
+	spi(data, 12);
+	si46xx_reply("DAB_START_DIGITAL_SERVICE_DATA");
+}
+
 void si46xx_dab_scan() {
 	uint8_t i;
 	struct dab_digrad_status_t status;
 
 	for (i = 0; i < dab_num_channels; i++) {
 		si46xx_dab_tune_freq(i, 0);
+        msleep(1000);
 		si46xx_dab_digrad_status(&status);
 		printf("Channel %d: ACQ: %d RSSI: %d SNR: %d ", i, status.acq, status.rssi, status.snr);
 		if (status.acq) {
@@ -281,7 +335,7 @@ void si46xx_dab_digrad_status(struct dab_digrad_status_t *status) {
 }
 
 void si46xx_dab_get_ensemble_info() {
-	char data[23];
+	char data[27];
 	char label[17];
 	uint8_t timeout = 10;
 
@@ -292,12 +346,16 @@ void si46xx_dab_get_ensemble_info() {
 
 	while (timeout--) {
 		data[0] = 0;
-		spi(data, 23);
+		spi(data, 27);
 		if (data[1] & 0x80) {
-			hexDump("DAB_GET_ENSEMBLE_INFO", data, 23);
+			hexDump("DAB_GET_ENSEMBLE_INFO", data, 27);
 			memcpy(label, data + 7, 16);
 			label[16] = '\0';
-			printf("Name: %s", label);
+			printf("Name: %s\r\n", label);
+            printf("Ensemble ECC: %x\r\n", data[23]);
+            printf("Charset: %x\r\n", data[24]);
+            printf("abbrev1: %d\r\n", data[25]);
+            printf("abbrev0: %d\r\n", data[26]);
 			return;
 		}
 		msleep(10);
@@ -306,7 +364,7 @@ void si46xx_dab_get_ensemble_info() {
 }
 
 void si46xx_dab_get_audio_info(void) {
-	char data[10];
+	char data[11];
 	uint8_t timeout = 10;
 
 	data[0] = SI46XX_DAB_GET_AUDIO_INFO;
@@ -315,8 +373,8 @@ void si46xx_dab_get_audio_info(void) {
 
 	while (timeout--) {
 		data[0] = 0;
-		spi(data, 10);
-		if (data[1] & 0x80) {
+		spi(data, 11);
+		if (data[1] & 0x81) {
 			hexDump("DAB_GET_AUDIO_INFO", data, 10);
 			printf("Bitrate    : %d kbps\r\n", data[5] + (data[6] << 8));
 			printf("Samplerate : %d Hz\r\n", data[7] + (data[8] << 8));
@@ -334,11 +392,38 @@ void si46xx_dab_get_audio_info(void) {
 			}
 			printf("SBR        : %d\r\n", (data[9] & 0x04) ? 1 : 0);
 			printf("PS         : %d\r\n", (data[9] & 0x08) ? 1 : 0);
+            printf("DRC GAIN   : %d\r\n", data[10]);
 			return;
 		}
 		msleep(10);
 	}
 	printf("timeout on DAB_GET_AUDIO_INFO\r\n");
+}
+
+void si46xx_dab_get_time(void) {
+	char data[12];
+	uint8_t timeout = 10;
+
+	data[0] = SI46XX_DAB_GET_TIME;
+	data[1] = 0;
+	spi(data, 2);
+
+	while (timeout--) {
+		data[0] = 0;
+		spi(data, 12);
+		if (data[1] & 0x81) {
+			hexDump("DAB_GET_TIME", data, 12);
+			printf("Year    : %d\r\n", data[5] + (data[6] << 8));
+			printf("Month   : %d \r\n", data[7]);
+			printf("Days    : %d \r\n", data[8]);
+			printf("Hours   : %d \r\n", data[9]);
+			printf("Minutes : %d \r\n", data[10]);
+			printf("Seconds : %i \r\n", data[11]);			
+			return;
+		}
+		msleep(10);
+	}
+	printf("timeout on DAB_GET_TIME\r\n");
 }
 
 void si46xx_dab_get_subchannel_info(uint32_t num) {
@@ -441,5 +526,117 @@ void si46xx_dab_get_subchannel_info(uint32_t num) {
 		msleep(10);
 	}
 	printf("timeout on DAB_GET_SUBCHAN_INFO\r\n");
+}
+
+void si46xx_dab_get_component_info(uint32_t num){
+    uint8_t data[34];
+	uint32_t service_id = dab_service_list.services[num].service_id;
+	uint16_t component_id = dab_service_list.services[num].component_id[0];
+	//char *service_label = dab_service_list.services[num].service_label;
+    uint8_t timeout = 10;
+
+	data[0] = SI46XX_DAB_GET_COMPONENT_INFO;
+	data[1] = 0;
+	data[2] = 0;
+	data[3] = 0;
+	data[4] = service_id & 0xFF;
+	data[5] = (service_id >> 8) & 0xFF;
+	data[6] = (service_id >> 16) & 0xFF;
+	data[7] = (service_id >> 24) & 0xFF;
+	data[8] = component_id & 0xFF;
+	data[9] = (component_id >> 8) & 0xFF;
+	data[10] = (component_id >> 16) & 0xFF;
+	data[11] = (component_id >> 24) & 0xFF;
+
+	//printf("Starting service %s %x %x\r\n", service_label, service_id, component_id);
+	spi(data, 12);
+
+    while (timeout--) {
+		data[0] = 0;
+		spi(data, 34);
+		if (data[1] & 0x81) {
+			hexDump("DAB_GET_COMPONENT_INFO", data, 34);
+			printf("Global ID    : %d\r\n", data[5]);
+			/*printf("Samplerate : %d Hz\r\n", data[7] + (data[8] << 8));
+			if ((data[9] & 0x03) == 0) {
+				printf("Audio Mode : Dual Mono\r\n");
+			}
+			if ((data[9] & 0x03) == 1) {
+				printf("Audio Mode : Mono\r\n");
+			}
+			if ((data[9] & 0x03) == 2) {
+				printf("Audio Mode : Stereo\r\n");
+			}
+			if ((data[9] & 0x03) == 3) {
+				printf("Audio Mode : Joint Stereo\r\n");
+			}*/
+			//printf("SBR        : %d\r\n", (data[9] & 0x04) ? 1 : 0);
+			//printf("PS         : %d\r\n", (data[9] & 0x08) ? 1 : 0);
+            printf("udata 26 NUMUA   : %d\r\n", data[27]);
+			printf("udata 27 LENUA   : %d\r\n", data[28]);
+			printf("udata 28 UATYPE  : %d\r\n", data[29]);
+			printf("udata 29 UATYPE  : %d\r\n", data[30]);
+			printf("udata 30 UADATALEN  : %d\r\n", data[31]);
+			printf("udata 31 UADATA0  : %d\r\n", data[32]);
+			printf("udata 32 UADATAN  : %d\r\n", data[33]);
+			//printf("udata 2   : %d\r\n", data[34]);
+            si46xx_reply_len("DAB_GET_COMPONENT_INFO", data[28]+ 33);
+			return;
+		}
+		msleep(10);
+	}
+	//si46xx_reply_len("DAB_GET_COMPONENT_INFO", data[28]+ 33);
+
+}
+
+void si46xx_dab_get_digital_service_data(void){
+    uint8_t data[25];
+	//uint32_t service_id = dab_service_list.services[num].service_id;
+	//uint16_t component_id = dab_service_list.services[num].component_id[0];
+	//char *service_label = dab_service_list.services[num].service_label;
+    uint8_t timeout = 10;
+
+    data[0] = SI46XX_DAB_GET_DIGITAL_SERVICE_DATA;
+	data[1] = 0x0001; //Acknowledge interrupts
+	//data[2] = 0;
+
+    spi(data, 2);
+
+    while (timeout--) {
+		data[0] = 0;
+		spi(data, 25);
+		if (data[1] & 0x81) {
+			hexDump("DAB_GET_DIGITAL_SERVICE_DATA", data, 25);
+			printf("Resp4   : %d\r\n", data[5]);
+			printf("buff count: %d\r\n", data[6]);
+			printf("srv_state   : %d\r\n", data[7]);
+            printf("data_src   : %d\r\n", (data[8] & 192 )>> 6 );
+            printf("DSCTy   : %x\r\n", (data[8] & 63 ) );
+            printf("ServiceId   : %x%x%x%x\r\n", data[12], data[11], data[10], data[9]);
+            printf("ComponentId   : %d%d%d%d\r\n", data[16], data[15], data[14], data[13]);
+            printf("UATYPE   : %d\r\n", data[17]);
+            printf("UATYPE   : %d\r\n", data[18]);
+            printf("bytes   : %x%x\r\n", data[20], data[19]);
+            //printf("bytes   : %d\r\n", data[20]);
+            printf("segnum   : %d\r\n", data[21]);
+            printf("segnum   : %d\r\n", data[22]);
+            printf("numsegs   : %d\r\n", data[23]);
+            printf("numsegs   : %d\r\n", data[24]);
+            printf("payload0   : %d\r\n", data[25]);
+            printf("payload1   : %d\r\n", data[26]);
+			
+			
+            si46xx_reply_len("DAB_DIGITAL_SERVICE_DATA",(data[20] << 8 | data[19]) + 24);
+			return;
+		}
+		msleep(10);
+	}
+	//si46xx_reply_len("DAB_GET_COMPONENT_INFO",data[19]);
+
+}
+
+void si46xx_get_announcement_prop(){
+    si46xx_get_property(SI46XX_DAB_ANNOUNCEMENT_ENABLE);
+
 }
 

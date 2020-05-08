@@ -29,7 +29,7 @@
 
 #include "si46xx.h"
 
-#define SI46XX_RESET 	4
+#define SI46XX_GPIO 	4
 
 #define SPI_DEVICE		"/dev/spidev0.0"
 #define SPI_SPEED		10000000
@@ -88,14 +88,32 @@ int spi(uint8_t *data, int len) {
 }
 
 int si46xx_reply(const char *log) {
-	uint8_t data[5];
+	uint8_t data[8];
 	uint8_t timeout = 10;
 
 	while (timeout--) {
 		data[0] = 0;
-		spi(data, 5);
+		spi(data, 8);
 		if (data[1] & 0x80) { // CTS ?
-			hexDump(log, data, 5);
+			hexDump(log, data, 8);
+			return 1;
+		}
+		msleep(10);
+	}
+	printf("timeout on %s\r\n", log);
+	return 0;
+}
+
+int si46xx_reply_len(const char *log, uint16_t len) {
+	uint8_t data[len];
+	uint8_t timeout = 10;
+    printf("length %d\r\n", len);
+
+	while (timeout--) {
+		data[0] = 0;
+		spi(data, len);
+		if (data[1] & 0x80) { // CTS ?
+			hexDump(log, data, len);
 			return 1;
 		}
 		msleep(10);
@@ -152,19 +170,23 @@ void si46xx_powerup() {
 	uint8_t data[16];
 
 	data[0] = SI46XX_POWER_UP; // COMMAND
-	data[1] = 0x00; // ARG1 disable CTSIEN
+	data[1] = 0x00; // ARG1 enable/disable CTSIEN
 	data[2] = (1 << 4) | (7 << 0); // ARG2 CLK_MODE=0x1 TR_SIZE=0x7
 	data[3] = 0x48; // ARG3 IBIAS=0x48
 	data[4] = 0x00; // ARG4 XTAL
-	data[5] = 0xF9; // ARG5 XTAL // F8
+	data[5] = 0xF8; // ARG5 XTAL // F8
 	data[6] = 0x24; // ARG6 XTAL
 	data[7] = 0x01; // ARG7 XTAL 19.2MHz
-	data[8] = 0x1F; // ARG8 CTUN
+    //data[4] = 0x00; // ARG4 XTAL
+	//data[5] = 0x1B; // ARG5 XTAL
+	//data[6] = 0xB7; // ARG6 XTAL
+	//data[7] = 0x00; // ARG7 XTAL 27MHz/12 00B71B00
+	data[8] = 0x1F; // ARG8 CTUN 0x1F
 	data[9] = 0x00 | (1 << 4); // ARG9
 	data[10] = 0x00; // ARG10
 	data[11] = 0x00; // ARG11
 	data[12] = 0x00; // ARG12
-	data[13] = 0x00; // ARG13 IBIAS_RUN
+	data[13] = 0x00; // ARG13 IBIAS_RUN 1/2 IBIAS?
 	data[14] = 0x00; // ARG14
 	data[15] = 0x00; // ARG15
 
@@ -218,6 +240,9 @@ void si46xx_get_sys_state() {
 	case 6:
 		printf("AMHD Demod is active\n");
 		break;
+    case 7:
+		printf("DAB Demod is active\n");
+		break;
 	default:
 		break;
 	}
@@ -235,13 +260,34 @@ void si46xx_set_property(uint16_t name, uint16_t value) {
 	si46xx_reply("SET_PROPERTY");
 }
 
+void si46xx_get_property(uint16_t name) {
+	uint8_t data[4];
+	data[0] = SI46XX_GET_PROPERTY;
+	data[1] = 1;
+	data[2] = name & 0xFF;
+	data[3] = (name >> 8) & 0xFF;
+	spi(data, 6);
+	si46xx_reply("GET_PROPERTY");
+}
+
 void si46xx_reset() {
 	wiringPiSetup();
-	pinMode(SI46XX_RESET, OUTPUT);
+	pinMode(SI46XX_GPIO, OUTPUT);
 
 	/* reset si46xx  */
-	digitalWrite(SI46XX_RESET, 0);
+	digitalWrite(SI46XX_GPIO, 0);
 	msleep(10);
-	digitalWrite(SI46XX_RESET, 1);
+	digitalWrite(SI46XX_GPIO, 1);
 	msleep(10);
+}
+
+void si46xx_shutdown() {
+	wiringPiSetup();
+	pinMode(SI46XX_GPIO, OUTPUT);
+
+	/* shutdown si46xx  */
+	digitalWrite(SI46XX_GPIO, 0);
+	msleep(10);
+	//digitalWrite(SI46XX_RESET, 1);
+	//msleep(10);
 }

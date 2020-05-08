@@ -3,6 +3,7 @@
 *.ko
 *.obj
 *.elf
+*.bin
 
 # Precompiled Headers
 *.gch
@@ -34,3 +35,5 @@
 
 dabpi_ctl
 /Debug/
+.vscode
+*.sh

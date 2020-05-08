@@ -1,0 +1,87 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2837", "brcm,bcm2836", "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709";
+
+    fragment@0 {
+        target = <&sound>;
+        __overlay__ {
+            compatible = "simple-audio-card";
+            simple-audio-card,name = "DabPi-IQAudioDacPlus";
+
+            status="okay";
+
+            capture_link: simple-audio-card,dai-link@0 {
+                format = "i2s";
+
+                r_cpu_dai: cpu {
+                    sound-dai = <&i2s>;
+
+                };
+
+                r_codec_dai: codec {
+                    sound-dai = <&codec_in>;
+                };
+            };
+
+            playback_link: simple-audio-card,dai-link@1 {
+                format = "i2s";
+                i2s-controller = <&i2s>;
+			    //mute-gpios = <&gpio 22 0>;
+                p_cpu_dai: cpu {
+                    sound-dai = <&i2s>;
+
+                };
+
+                p_codec_dai: codec {
+                    sound-dai = <&codec_out>;
+                };
+            };
+        };
+    };
+
+    fragment@1 {
+        target = <&i2c1>;
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+            codec_out: pcm5122@4c {
+				#sound-dai-cells = <0>;
+				compatible = "ti,pcm5122";
+				reg = <0x4c>;
+				AVDD-supply = <&vdd_3v3_reg>;
+				DVDD-supply = <&vdd_3v3_reg>;
+				CPVDD-supply = <&vdd_3v3_reg>;
+				status = "okay";
+			};
+        };
+    };
+
+    fragment@3 {
+        target-path = "/";
+        __overlay__ {
+            codec_in: dabboard {
+                #address-cells = <0>;
+                #size-cells = <0>;
+                #sound-dai-cells = <0>;
+                compatible = "ti,si468x";
+                status = "okay";
+            };
+        };
+    };
+
+    fragment@2 {
+        target = <&i2s>;
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    __overrides__ {
+		24db_digital_gain = <&playback_link>,"playback_link,24db_digital_gain?";
+		auto_mute_amp = <&playback_link>,"playback_link,auto-mute-amp?";
+		unmute_amp = <&playback_link>,"playback_link,unmute-amp?";
+	};
+};

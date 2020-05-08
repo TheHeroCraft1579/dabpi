@@ -26,9 +26,9 @@
 void si46xx_init_fm(void) {
 	si46xx_reset();
 	si46xx_powerup();
+    si46xx_hostload("firmware/rom00_patch_mini.bin");
 	si46xx_hostload("firmware/rom00_patch.016.bin");
-	// si46xx_hostload("firmware/fmhd_radio_3_0_19.bif");
-	si46xx_hostload("firmware/fmhd_radio_5_0_4.bin");
+    si46xx_hostload("firmware/fmhd_radio_5_1_2.bin");
 	si46xx_boot();
 
 	si46xx_get_sys_state();
@@ -40,7 +40,7 @@ void si46xx_init_fm(void) {
 	// si46xx_set_property(SI46XX_FM_SOFTMUTE_SNR_LIMITS, 0x0000); // set the SNR limits for soft mute attenuation
 	// si46xx_set_property(SI46XX_FM_TUNE_FE_CFG, 0x0000); // front end switch open
 	// si46xx_set_property(SI46XX_DIGITAL_IO_OUTPUT_FORMAT, 0x1000); // SAMPL_SIZE = 16, I2S mode
-	si46xx_set_property(SI46XX_FM_RDS_CONFIG, 0x0001); // enable RDS
+	si46xx_set_property(SI46XX_FM_RDS_CONFIG, 0x1101); // enable RDS
 	si46xx_set_property(SI46XX_FM_AUDIO_DE_EMPHASIS, SI46XX_AUDIO_DE_EMPHASIS_EU); // set de-emphasis for Europe
 	// si46xx_fm_tune_freq(105500,0);
 }
@@ -143,7 +143,7 @@ void si46xx_fm_rds_status(void) {
 
 		data[0] = 0;
 		spi(data, 21);
-		// hexDump("FM_RDS_STATUS", data, 21);
+		hexDump("FM_RDS_STATUS", data, 21);
 
 		blocks[0] = data[13] + (data[14] << 8);
 		blocks[1] = data[15] + (data[16] << 8);
@@ -171,7 +171,7 @@ void si46xx_fm_rds_blockcount(void) {
 	uint8_t data[11];
 
 	data[0] = SI46XX_FM_RDS_BLOCKCOUNT;
-	data[1] = 0;
+	data[1] = 1;
 	// data[1] = 1; // clears block counts if set
 	spi(data, 2);
 

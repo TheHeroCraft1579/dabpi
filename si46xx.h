@@ -40,14 +40,21 @@
 #define SI46XX_FM_RDS_STATUS 0x34
 #define SI46XX_FM_RDS_BLOCKCOUNT 0x35
 
+#define SI46XX_DAB_INT_CTL_ENABLE 0x0000
+#define SI46XX_DAB_INT_CTL_REPEAT 0x0001
 #define SI46XX_DAB_TUNE_FREQ 0xB0
 #define SI46XX_DAB_DIGRAD_STATUS 0xB2
+#define SI46XX_DAB_GET_EVENT_STATUS 0xB3
 #define SI46XX_DAB_GET_SERVICE_LINKING_INFO 0xB7
 #define SI46XX_DAB_SET_FREQ_LIST 0xB8
 #define SI46XX_DAB_GET_DIGITAL_SERVICE_LIST 0x80
 #define SI46XX_DAB_START_DIGITAL_SERVICE 0x81
+#define SI46XX_DAB_STOP_DIGITAL_SERVICE 0x82
+#define SI46XX_DAB_GET_DIGITAL_SERVICE_DATA 0x84
 #define SI46XX_DAB_GET_ENSEMBLE_INFO 0xB4
+#define SI46XX_DAB_GET_COMPONENT_INFO 0xBB
 #define SI46XX_DAB_GET_AUDIO_INFO 0xBD
+#define SI46XX_DAB_GET_TIME 0xBC
 #define SI46XX_DAB_GET_SUBCHAN_INFO 0xBE
 
 #define SI46XX_FM_INT_CTL_ENABLE 0x0000
@@ -66,10 +73,13 @@
 #define SI46XX_DAB_TUNE_FE_CFG 0x1712
 #define SI46XX_DAB_TUNE_FE_VARM 0x1710
 #define SI46XX_DAB_TUNE_FE_VARB 0x1711
-#define SI46XX_DAB_CTRL_DAB_MUTE_ENABLE 0xB400
+#define SI46XX_DAB_CRTL_XPAD_ENABLE 0xB400
+#define SI46XX_DAB_DRC_OPTION 0xB401
+
 #define SI46XX_DAB_CTRL_DAB_MUTE_SIGNAL_LEVEL_THRESHOLD 0xB501
 #define SI46XX_DAB_CTRL_DAB_MUTE_SIGLOW_THRESHOLD 0xB505
 #define SI46XX_DAB_CTRL_DAB_ACF_ENABLE 0xB500
+#define SI46XX_DAB_ANNOUNCEMENT_ENABLE 0xB700
 
 #define SI46XX_PIN_CONFIG_ENABLE 0x0800
 #define SI46XX_DIGITAL_SERVICE_INT_SOURCE 0x8100
@@ -176,10 +186,12 @@ struct dab_service_list_t{
 }dab_service_list;
 
 void si46xx_reset(void);
+void si46xx_shutdown(void);
 void si46xx_init_dab(void);
 void si46xx_init_fm(void);
 void si46xx_get_sys_state(void);
 void si46xx_set_property(uint16_t property_id, uint16_t data);
+void si46xx_get_property(uint16_t property_id);
 
 void si46xx_fm_tune_freq(uint32_t khz, uint16_t antcap);
 void si46xx_fm_rsq_status(void);
@@ -191,14 +203,23 @@ void si46xx_dab_set_freq_list(uint8_t num, uint32_t *freq_list);
 void si46xx_dab_tune_freq(uint8_t index, uint8_t antcap);
 void si46xx_dab_digrad_status(struct dab_digrad_status_t *status);
 void si46xx_dab_digrad_status_print(struct dab_digrad_status_t *status);
+void si46xx_dab_get_event_status(void);
 void si46xx_dab_get_service_linking_info(uint32_t service_id);
 void si46xx_dab_start_digital_service(uint32_t service_id, uint32_t comp_id);
+void si46xx_dab_stop_digital_service(uint32_t service_id, uint32_t comp_id);
+
 void si46xx_dab_print_service_list(void);
 void si46xx_dab_start_digital_service_num(uint32_t num);
+void si46xx_dab_start_digital_service_data(uint32_t num);
+void si46xx_dab_stop_digital_service_data(uint32_t num);
+
+void si46xx_dab_get_digital_service_data(void);
 void si46xx_dab_get_ensemble_info(void);
 void si46xx_dab_get_audio_info(void);
 void si46xx_dab_get_subchannel_info(uint32_t num);
 void si46xx_dab_scan(void);
+void si46xx_dab_get_time(void);
+void si46xx_dab_get_component_info(uint32_t num);
 int si46xx_dab_get_digital_service_list(void);
 
 #endif

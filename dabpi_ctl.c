@@ -28,8 +28,8 @@
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof((x)[0]))
 
 uint32_t frequency_list_nrw[] = {
-	CHAN_5C,
-	CHAN_11D
+    CHAN_5C,
+    CHAN_11D
 };
 uint32_t frequency_list_by[] = {
 	CHAN_5C,
@@ -121,6 +121,20 @@ uint32_t frequency_list_ch[] = {
 	CHAN_9D,
 	CHAN_8B
 };
+uint32_t frequency_list_uk[] = {
+    CHAN_10A,
+    CHAN_10B,
+    CHAN_10C,
+    CHAN_10D,
+    CHAN_11A,
+    CHAN_11B,
+    CHAN_11C,
+    CHAN_11D,
+    CHAN_12A,
+    CHAN_12B,
+    CHAN_12C,
+    CHAN_12D
+};
 
 //static struct global_args_t{
 //	int dab;
@@ -170,12 +184,15 @@ void show_help(char *prog_name) {
 	printf("                    14  Thueringen\r\n");
 	printf("                    15  Suedtirol (Italien)\r\n");
 	printf("                    16  Schweiz\r\n");
+    printf("                    17  UK\r\n");
 	printf("  -k region      scan frequency list\r\n");
 	printf("  -l up|down     fm seek next station\r\n");
 	printf("  -m             fm rds status\r\n");
 	printf("  -n             dab get audio info\r\n");
 	printf("  -o service     dab get subchannel info\r\n");
 	printf("  -s             get sys state (fm,dab,am...)\r\n");
+    printf("  -t             get time\r\n");
+    printf("  -x             shutdown system\r\n");
 	printf("  -h             this help\n");
 }
 
@@ -214,6 +231,8 @@ void load_regional_channel_list(uint8_t tmp) {
 		si46xx_dab_set_freq_list(ARRAY_SIZE(frequency_list_it_sue), frequency_list_it_sue);
 	} else if (tmp == 16) {
 		si46xx_dab_set_freq_list(ARRAY_SIZE(frequency_list_ch), frequency_list_ch);
+	} else if (tmp == 17) {
+		si46xx_dab_set_freq_list(ARRAY_SIZE(frequency_list_uk), frequency_list_uk);
 	} else {
 		printf("Region %d not implemented\r\n", tmp);
 	}
@@ -230,7 +249,7 @@ int main(int argc, char **argv) {
 
 	spi_init();
 
-	while ((c = getopt(argc, argv, "abc:def:ghi:j:k:l:mno:s")) != -1) {
+	while ((c = getopt(argc, argv, "abc:def:ghi:j:k:l:mno:p:q:rstu:vwx")) != -1) {
 		switch (c) {
 		case 'a':
 			si46xx_init_dab();
@@ -293,9 +312,40 @@ int main(int argc, char **argv) {
 			si46xx_dab_print_service_list();
 			si46xx_dab_get_subchannel_info(tmp);
 			break;
+        case 'p':
+            tmp = atoi(optarg);
+			si46xx_dab_get_digital_service_list();
+			si46xx_dab_print_service_list();
+			si46xx_dab_get_component_info(tmp);
+            break;
+        case 'q':
+			si46xx_dab_get_digital_service_list();
+			si46xx_dab_print_service_list();
+			si46xx_dab_start_digital_service_data(atoi(optarg));
+			break;
+        case 'r':
+			si46xx_dab_get_digital_service_data();
+			break;
 		case 's':
 			si46xx_get_sys_state();
 			break;
+        case 't':
+			si46xx_dab_get_time();
+			break;
+        case 'u':
+			si46xx_dab_get_digital_service_list();
+			si46xx_dab_print_service_list();
+			si46xx_dab_stop_digital_service_data(atoi(optarg));
+			break;
+        case 'w':
+            si46xx_get_announcement_prop();
+            break;
+        case 'v':
+			si46xx_dab_get_ensemble_info();
+			break;
+        case 'x':
+            si46xx_shutdown();
+            break;
 		default:
 			show_help(argv[0]);
 			break;

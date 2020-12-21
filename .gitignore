@@ -37,3 +37,6 @@ dabpi_ctl
 /Debug/
 .vscode
 *.sh
+
+# Firmware (License issue)
+/firmware/

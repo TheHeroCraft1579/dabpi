@@ -31,7 +31,7 @@ void si46xx_init_dab(void)
     si46xx_powerup();
     si46xx_hostload("firmware/rom00_patch_mini.bin");
     si46xx_hostload("firmware/rom00_patch.016.bin");
-    si46xx_hostload("firmware/dab_radio_5_0_9.bin");
+    si46xx_hostload("firmware/dab_radio.bin");
 
     si46xx_boot();
 

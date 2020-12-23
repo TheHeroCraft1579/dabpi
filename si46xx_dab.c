@@ -46,7 +46,8 @@ void si46xx_init_dab(void)
     si46xx_set_property(SI46XX_DAB_TUNE_FE_CFG, 0x0001);            // front end switch closed
     si46xx_set_property(SI46XX_DAB_TUNE_FE_VARM, 0x1710);           // Front End Varactor configuration (Changed from '10' to 0x1710 to improve receiver sensitivity - Bjoern 27.11.14)
     si46xx_set_property(SI46XX_DAB_TUNE_FE_VARB, 0x1711);           // Front End Varactor configuration (Changed from '10' to 0x1711 to improve receiver sensitivity - Bjoern 27.11.14)
-    si46xx_set_property(SI46XX_PIN_CONFIG_ENABLE, 0x8002);          // enable I2S output (BUG!!! either DAC or I2S seems to work)
+    //si46xx_set_property(SI46XX_PIN_CONFIG_ENABLE, 0x8002);          // enable I2S output (since i2s isn't working on a raspberry pi we're gonna use analog audio )
+    si46xx_set_property(SI46XX_PIN_CONFIG_ENABLE, 0x8001);          // enable analog audio output
     si46xx_set_property(SI46XX_DAB_INT_CTL_ENABLE, 0x0050);         // Enable DSRVINT
     si46xx_set_property(SI46XX_DAB_CRTL_XPAD_ENABLE, 0xBFDD);       //Enable all data types
     si46xx_set_property(SI46XX_DAB_DRC_OPTION, 0x0002);             //Enable 1/2 DRC gain

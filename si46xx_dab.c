@@ -56,16 +56,17 @@ void si46xx_init_dab(void)
 
 void si46xx_dab_digrad_status_print(struct dab_digrad_status_t *status)
 {
-    printf("ACQ         : %d\r\n", status->acq);
-    printf("VALID       : %d\r\n", status->valid);
-    printf("RSSI        : %d\r\n", status->rssi);
-    printf("SNR         : %d\r\n", status->snr);
-    printf("FIC_QUALITY : %d\r\n", status->fic_quality);
-    printf("CNR         : %d\r\n", status->cnr);
-    printf("FFT_OFFSET  : %d\r\n", status->fft_offset);
-    printf("Tuned freq  : %d kHz\r\n", status->frequency);
-    printf("Tuned index : %d\r\n", status->tuned_index);
-    printf("ANTCAP      : %d\r\n", status->read_ant_cap);
+    //printf("ACQ         : %d\r\n", status->acq);
+    //printf("VALID       : %d\r\n", status->valid);
+    //printf("RSSI        : %d\r\n", status->rssi);
+    //printf("SNR         : %d\r\n", status->snr);
+    //printf("FIC_QUALITY : %d\r\n", status->fic_quality);
+    //printf("CNR         : %d\r\n", status->cnr);
+    //printf("FFT_OFFSET  : %d\r\n", status->fft_offset);
+    //printf("Tuned freq  : %d kHz\r\n", status->frequency);
+    //printf("Tuned index : %d\r\n", status->tuned_index);
+    //printf("ANTCAP      : %d\r\n", status->read_ant_cap);
+    printf("{\"acq\": \"%d\", \"valid\": \"%d\", \"rssi\": \"%d\", \"snr\": \"%d\", \"ficQuality\": \"%d\", \"cnr\": \"%d\", \"fftOffset\": \"%d\", \"tunedFrequency\": \"%d\", \"tunedIndex\": \"%d\", \"antcap\": \"%d\"}", status->acq, status->valid, status->rssi, status->snr, status->fic_quality, status->cnr, status->fft_offset, status->frequency, status->tuned_index, status->read_ant_cap);
 }
 
 si46xx_swap_services(uint8_t first, uint8_t second)
@@ -412,7 +413,13 @@ void si46xx_dab_get_audio_info(void)
     data[0] = SI46XX_DAB_GET_AUDIO_INFO;
     data[1] = 0;
     spi(data, 2);
-
+    
+    FILE *stream;
+    char *buf;
+    size_t len;
+    
+    stream = open_memstream(&buf, &len);
+    
     while (timeout--)
     {
         data[0] = 0;
@@ -420,32 +427,42 @@ void si46xx_dab_get_audio_info(void)
         if (data[1] & 0x81)
         {
             hexDump("DAB_GET_AUDIO_INFO", data, 10);
-            printf("Bitrate    : %d kbps\r\n", data[5] + (data[6] << 8));
-            printf("Samplerate : %d Hz\r\n", data[7] + (data[8] << 8));
+            //printf("Bitrate    : %d kbps\r\n", data[5] + (data[6] << 8));
+            fprintf(stream, "{\"bitrate\": \"%d\", ", data[5] + (data[6] << 8));
+            //printf("Samplerate : %d Hz\r\n", data[7] + (data[8] << 8));
+            fprintf(stream, "\"samplerate\": \"%d\", ", data[7] + (data[8] << 8));
             if ((data[9] & 0x03) == 0)
             {
-                printf("Audio Mode : Dual Mono\r\n");
+                //printf("Audio Mode : Dual Mono\r\n");
+                fprintf(stream, "\"audioMode\": \"dual\", ");
             }
             if ((data[9] & 0x03) == 1)
             {
-                printf("Audio Mode : Mono\r\n");
+                //printf("Audio Mode : Mono\r\n");
+                fprintf(stream, "\"audioMode\": \"mono\", ");
             }
             if ((data[9] & 0x03) == 2)
             {
-                printf("Audio Mode : Stereo\r\n");
+                //printf("Audio Mode : Stereo\r\n");
+                fprintf(stream, "\"audioMode\": \"stereo\", ");
             }
             if ((data[9] & 0x03) == 3)
             {
-                printf("Audio Mode : Joint Stereo\r\n");
+                //printf("Audio Mode : Joint Stereo\r\n");
+                fprintf(stream, "\"audioMode\": \"joint-stereo\", ");
             }
-            printf("SBR        : %d\r\n", (data[9] & 0x04) ? 1 : 0);
-            printf("PS         : %d\r\n", (data[9] & 0x08) ? 1 : 0);
-            printf("DRC GAIN   : %d\r\n", data[10]);
+            //printf("SBR        : %d\r\n", (data[9] & 0x04) ? 1 : 0);
+            //printf("PS         : %d\r\n", (data[9] & 0x08) ? 1 : 0);
+            //printf("DRC GAIN   : %d\r\n", data[10]);
+            fprintf(stream, "\"sbr\": \"%d\", \"ps\": \"%d\", \"drcGain\": \"%d\"}", (data[9] & 0x04) ? 1 : 0, (data[9] & 0x08) ? 1 : 0, data[10]);
+            fclose(stream);
+            printf(buf);
+            free(buf);
             return;
         }
         msleep(10);
     }
-    printf("timeout on DAB_GET_AUDIO_INFO\r\n");
+    //printf("timeout on DAB_GET_AUDIO_INFO\r\n");
 }
 
 void si46xx_dab_get_time(void)

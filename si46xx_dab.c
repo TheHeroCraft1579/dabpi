@@ -426,7 +426,7 @@ void si46xx_dab_get_audio_info(void)
         spi(data, 11);
         if (data[1] & 0x81)
         {
-            hexDump("DAB_GET_AUDIO_INFO", data, 10);
+            //hexDump("DAB_GET_AUDIO_INFO", data, 10);
             //printf("Bitrate    : %d kbps\r\n", data[5] + (data[6] << 8));
             fprintf(stream, "{\"bitrate\": \"%d\", ", data[5] + (data[6] << 8));
             //printf("Samplerate : %d Hz\r\n", data[7] + (data[8] << 8));
@@ -473,6 +473,12 @@ void si46xx_dab_get_time(void)
     data[0] = SI46XX_DAB_GET_TIME;
     data[1] = 0;
     spi(data, 2);
+    
+    FILE *stream;
+    char *buf;
+    size_t len;
+    
+    stream = open_memstream(&buf, &len);
 
     while (timeout--)
     {
@@ -480,6 +486,7 @@ void si46xx_dab_get_time(void)
         spi(data, 12);
         if (data[1] & 0x81)
         {
+            /*
             hexDump("DAB_GET_TIME", data, 12);
             printf("Year    : %d\r\n", data[5] + (data[6] << 8));
             printf("Month   : %d \r\n", data[7]);
@@ -487,6 +494,11 @@ void si46xx_dab_get_time(void)
             printf("Hours   : %d \r\n", data[9]);
             printf("Minutes : %d \r\n", data[10]);
             printf("Seconds : %i \r\n", data[11]);
+            */
+            fprintf(stream, "{\"year\": \"%d\", \"month\": \"%d\", \"day\": \"%d\", \"hours\": \"%d\", \"minutes\": \"%d\", \"seconds\": \"%i\"}", data[5] + (data[6] << 8), data[7], data[8], data[9], data[10], data[11]);
+            fclose(stream);
+            printf(buf);
+            free(buf);
             return;
         }
         msleep(10);
